@@ -315,3 +315,16 @@ linezolid 600 MG Oral Tablet [Zyvox]	19068758	436
 erythromycin lactobionate 500 MG Injection [Erythrocin]	35603401	136
 cefpodoxime 100 MG Oral Tablet	19074932	118
 tigecycline 50 MG Injection	1742434	105
+
+
+
+-- From Thierry about mortality dates
+SELECT PERSON.*, VISIT_OCCURRENCE.*, DEATH.*, (to_unixtime(DEATH.death_datetime) > ((60 * 60 * 24 * 90) + to_unixtime(visit_occurrence.visit_start_datetime))) as death_after_90_days_visit
+FROM PERSON, VISIT_OCCURRENCE, DEATH
+WHERE VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+AND PERSON.PERSON_ID = DEATH.PERSON_ID
+UNION
+SELECT PERSON.*, VISIT_OCCURRENCE.*, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+FROM PERSON, VISIT_OCCURRENCE
+WHERE VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+AND VISIT_OCCURRENCE.person_id NOT IN (SELECT DEATH.PERSON_ID FROM DEATH)
