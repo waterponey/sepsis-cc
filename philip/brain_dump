@@ -1,0 +1,317 @@
+SQL concepts
+
+select * from mimicomop.concept where concept_name like '%Creatinine%' and concept_class_id = 'Lab Test' limit 1000
+
+concept_id	concept_name						  domain_id	vocabulary_id	concept_class_id	standard_concept	concept_code	valid_start_date	valid_end_date	invalid_reason
+
+44827180    Severe sepsis 		                  Condition   ICD9CM        5-dig billing code
+45548977    Se
+SELECT COUNT(vo.visit_occurrence_id)
+FROM condition_occurrence co, visit_occurrence vo, concept c 
+where 
+co.condition_source_concept_id = c.concept_id
+and co.visit_occurrence_id = vo.visit_occurrence_id
+and c.concept_id in (44827180, 44823969)
+
+
+vere sepsis without septic shock    Condition   ICD10CM       5-char billing code
+45577803    Severe sepsis with septic shock       Condition   ICD10CM       5-char billing code
+
+SQL domains for measurements
+
+3024929 	Platelets [#/volume] in Blood by Automated count  				778365
+3010834 	Platelets [#/volume] in Blood by Manual count     				44151
+3016723 	Creatinine serum/plasma                           				797539
+3018834 	Bilirubin.total [Presence] in Urine by Test strip 				99680
+3002113 	Variant lymphocytes [Presence] in Blood by Light microscopy     59334
+
+3004327     Lymphocytes [#/volume] in Blood by Automated count              27015
+3002113     Variant lymphocytes [Presence] in Blood by Light microscopy     12980
+3004437     Lymphocytes/100 leukocytes in Peritoneal fluid                  874
+3005532     Lymphocytes/100 leukocytes in Pleural fluid                     618
+
+3003282     Leukocytes [#/volume] in Blood by Manual count                  120810
+3035583	 	Leukocytes [#/area] in Urine sediment by Microscopy high power field
+3000348     Leukocyte esterase [Presence] in Urine by Test strip
+3023487     Leukocytes [#/volume] in Peritoneal fluid                       874
+
+
+--person_id for sepsis3
+SELECT COUNT(DISTINCT PERSON.PERSON_ID) 
+FROM COHORT, COHORT_DEFINITION, VISIT_OCCURRENCE, PERSON 
+WHERE lower(COHORT_DEFINITION.COHORT_DEFINITION_NAME) like lower('%sepsis3%') 
+AND COHORT.COHORT_DEFINITION_ID = COHORT_DEFINITION.COHORT_DEFINITION_ID 
+AND COHORT.SUBJECT_ID = VISIT_OCCURRENCE.VISIT_OCCURRENCE_ID 
+AND VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+
+--deaths of person_id for sepsis3
+SELECT COUNT(DISTINCT PERSON.PERSON_ID)
+FROM COHORT, COHORT_DEFINITION, VISIT_OCCURRENCE, PERSON, DEATH
+WHERE lower(COHORT_DEFINITION.COHORT_DEFINITION_NAME) like lower('%sepsis3%') 
+AND COHORT.COHORT_DEFINITION_ID = COHORT_DEFINITION.COHORT_DEFINITION_ID 
+AND COHORT.SUBJECT_ID = VISIT_OCCURRENCE.VISIT_OCCURRENCE_ID 
+AND VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+AND PERSON.PERSON_ID = DEATH.PERSON_ID
+
+--measurements for sepsis3 people 
+SELECT count(m.measurement_concept_id) FROM measurement m 
+JOIN visit_occurrence vo on m.visit_occurrence_id = vo.visit_occurrence_id
+where m.measurement_concept_id in (3024929, 3010834, 3016723, 3018834, 3002113) and vo.person_id IN (
+    SELECT DISTINCT PERSON.PERSON_ID
+    FROM COHORT, COHORT_DEFINITION, VISIT_OCCURRENCE, PERSON 
+    WHERE lower(COHORT_DEFINITION.COHORT_DEFINITION_NAME) like lower('%sepsis3%') 
+    AND COHORT.COHORT_DEFINITION_ID = COHORT_DEFINITION.COHORT_DEFINITION_ID 
+    AND COHORT.SUBJECT_ID = VISIT_OCCURRENCE.VISIT_OCCURRENCE_ID 
+    AND VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+)
+
+--conditions of people in sepsis3
+select C.concept_name, CO.condition_concept_id, COUNT(*)
+from concept C, condition_occurrence CO
+where CO.condition_concept_id = C.concept_id
+and co.person_id IN (
+    SELECT DISTINCT PERSON.PERSON_ID
+    FROM COHORT, COHORT_DEFINITION, VISIT_OCCURRENCE, PERSON 
+    WHERE lower(COHORT_DEFINITION.COHORT_DEFINITION_NAME) like lower('%sepsis3%') 
+    AND COHORT.COHORT_DEFINITION_ID = COHORT_DEFINITION.COHORT_DEFINITION_ID 
+    AND COHORT.SUBJECT_ID = VISIT_OCCURRENCE.VISIT_OCCURRENCE_ID 
+    AND VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+)
+group by C.concept_name ORDER BY count(1) desc 
+limit 1000
+
+--measurements on death date
+SELECT count(m.measurement_concept_id) FROM measurement m, death d, visit_occurrence vo
+where 
+	m.visit_occurrence_id = vo.visit_occurrence_id
+and
+	d.death_date = measurement_date
+and 
+vo.person_id IN (
+    SELECT DISTINCT PERSON.PERSON_ID
+    FROM COHORT, COHORT_DEFINITION, VISIT_OCCURRENCE, PERSON 
+    WHERE lower(COHORT_DEFINITION.COHORT_DEFINITION_NAME) like lower('%sepsis3%') 
+    AND COHORT.COHORT_DEFINITION_ID = COHORT_DEFINITION.COHORT_DEFINITION_ID 
+    AND COHORT.SUBJECT_ID = VISIT_OCCURRENCE.VISIT_OCCURRENCE_ID 
+    AND VISIT_OCCURRENCE.PERSON_ID = PERSON.PERSON_ID
+)
+--death date measurements 26944898
+--total measurements 68379705
+
+
+
+SELECT COUNT(vo.visit_occurrence_id)
+FROM condition_occurrence co, visit_occurrence vo, concept c 
+where 
+co.condition_source_concept_id = c.concept_id
+and co.visit_occurrence_id = vo.visit_occurrence_id
+and c.concept_id in (44827180, 44825805)
+
+
+SELECT COUNT(distinct(vo.visit_occurrence_id)), COUNT(distinct(p.race_source_concept_id	))
+FROM condition_occurrence co, visit_occurrence vo, concept c, person p 
+where 
+co.condition_source_concept_id = c.concept_id
+and co.visit_occurrence_id = vo.visit_occurrence_id
+and c.concept_id in (44827180, 44825805)
+and vo.preceding_visit_occurrence_id is null
+and vo.person_id = p.person_id
+
+
+SELECT COUNT(distinct(vo.visit_occurrence_id)), COUNT(distinct(d.person_id))
+FROM condition_occurrence co, visit_occurrence vo, concept c, death d 
+where 
+co.condition_source_concept_id = c.concept_id
+and co.visit_occurrence_id = vo.visit_occurrence_id
+and c.concept_id in (44827180, 44825805)
+and vo.preceding_visit_occurrence_id is null
+and d.death_date = vo.visit_start_date
+
+
+
+select C.concept_name, CO.condition_concept_id, C.concept_code, COUNT(*)
+from concept C, condition_occurrence CO
+where CO.condition_concept_id = C.concept_id
+and lower(C.concept_name) like lower('%infection%') 
+and co.person_id IN (
+    SELECT DISTINCT vo.PERSON_ID
+    FROM condition_occurrence co, visit_occurrence vo, concept c 
+    where 
+    co.condition_source_concept_id = c.concept_id
+    and co.visit_occurrence_id = vo.visit_occurrence_id
+    and c.concept_id in (44827180, 44825805)
+)
+group by C.concept_name, CO.condition_concept_id, C.concept_code ORDER BY count(1) desc 
+limit 1000
+
+
+SELECT count(m.measurement_concept_id) FROM measurement m 
+JOIN visit_occurrence vo on m.visit_occurrence_id = vo.visit_occurrence_id
+where m.measurement_concept_id in (
+3024929, 3010834, 
+3016723, 3018834, 
+3002113, 3004327, 
+3002113, 3004437, 
+3005532, 3003282, 
+3035583, 
+3000348, 3023487
+
+) and vo.person_id IN (
+    SELECT DISTINCT vo.PERSON_ID
+    FROM condition_occurrence co, visit_occurrence vo, concept c 
+    where 
+    co.condition_source_concept_id = c.concept_id
+    and co.visit_occurrence_id = vo.visit_occurrence_id
+    and c.concept_id in (44827180, 44825805)
+)
+
+-- 197320    Acute renal failure syndrome   					2653
+-- 439697    Hypertensive renal disease with renal failure		1387
+-- 46271022  Chronic kidney disease                             768
+
+select distinct(d.drug_source_value), count(*)
+from drug_exposure d
+where d.person_id IN (
+    SELECT DISTINCT vo.PERSON_ID
+    FROM condition_occurrence co, visit_occurrence vo, concept c 
+    where 
+    co.condition_source_concept_id = c.concept_id
+    and co.visit_occurrence_id = vo.visit_occurrence_id
+    and c.concept_id in (44827180, 44825805)
+)
+group by d.drug_source_value ORDER BY count(1) desc 
+limit 1000
+
+
+--Drugs
+select * from mimicomop.concept c
+where  domain_id = 'Drug' and ( 
+concept_name like
+lower('%Amikacin%') OR concept_name like
+lower('%Amoxicillin%') OR concept_name like
+lower('%Amoxicillin-Clavulanic Acid%') OR concept_name like
+lower('%Amphotericin B%') OR concept_name like
+lower('%Ampicillin-Sulbactam%') OR concept_name like
+lower('%Azithromycin%') OR concept_name like
+lower('%Cefazolin%') OR concept_name like
+lower('%Cefepime%') OR concept_name like
+lower('%Cefotetan%') OR concept_name like
+lower('%Cefpodoxime%') OR concept_name like
+lower('%Ceftazidime Ceftazidime%') OR concept_name like
+lower('%Ceftriaxone%') OR concept_name like
+lower('%Cefuroxime%') OR concept_name like
+lower('%Clarithromycin%') OR concept_name like
+lower('%Clindamycin%') OR concept_name like
+lower('%Daptomycin%') OR concept_name like
+lower('%Dicloxacillin%') OR concept_name like
+lower('%Doripenem%') OR concept_name like
+lower('%Ertapenem%') OR concept_name like
+lower('%Erythromycin%') OR concept_name like
+lower('%Erythromycin%') OR concept_name like
+lower('%Fidaxomicin%') OR concept_name like
+lower('%Fosfomycin%') OR concept_name like
+lower('%Gentamicin%') OR concept_name like
+lower('%Imipenem%') OR concept_name like
+lower('%Levofloxacin%') OR concept_name like
+lower('%Linezolid%') OR concept_name like
+lower('%Meropenem%') OR concept_name like
+lower('%Moxifloxacin%') OR concept_name like
+lower('%Nitrofurantoin%') OR concept_name like
+lower('%Oxacillin%') OR concept_name like
+lower('%Penicillin G%') OR concept_name like
+lower('%Penicillin V%') OR concept_name like
+lower('%Piperacillin%') OR concept_name like
+lower('%Piperacillin-Tazobactam%') OR concept_name like
+lower('%Rifampin%') OR concept_name like
+lower('%Tigecycline%') OR concept_name like
+lower('%Tobramycin%') OR concept_name like
+lower('%Trimethoprim%') OR concept_name like
+lower('%Vancomycin%')) 
+
+--drug exposures for cohort
+select d.*
+from drug_exposure d
+where d.person_id IN (
+    SELECT DISTINCT vo.PERSON_ID
+    FROM condition_occurrence co, visit_occurrence vo, concept c 
+    where 
+    co.condition_source_concept_id = c.concept_id
+    and co.visit_occurrence_id = vo.visit_occurrence_id
+    and c.concept_id in (44827180, 44825805)
+)
+and d.drug_concept_id in (
+    select DISTINCT c.concept_id from mimicomop.concept c
+    where  domain_id = 'Drug' and ( 
+    concept_name like
+    lower('%Amikacin%') OR concept_name like
+    lower('%Amoxicillin%') OR concept_name like
+    lower('%Amoxicillin-Clavulanic Acid%') OR concept_name like
+    lower('%Amphotericin B%') OR concept_name like
+    lower('%Ampicillin-Sulbactam%') OR concept_name like
+    lower('%Azithromycin%') OR concept_name like
+    lower('%Cefazolin%') OR concept_name like
+    lower('%Cefepime%') OR concept_name like
+    lower('%Cefotetan%') OR concept_name like
+    lower('%Cefpodoxime%') OR concept_name like
+    lower('%Ceftazidime Ceftazidime%') OR concept_name like
+    lower('%Ceftriaxone%') OR concept_name like
+    lower('%Cefuroxime%') OR concept_name like
+    lower('%Clarithromycin%') OR concept_name like
+    lower('%Clindamycin%') OR concept_name like
+    lower('%Daptomycin%') OR concept_name like
+    lower('%Dicloxacillin%') OR concept_name like
+    lower('%Doripenem%') OR concept_name like
+    lower('%Ertapenem%') OR concept_name like
+    lower('%Erythromycin%') OR concept_name like
+    lower('%Erythromycin%') OR concept_name like
+    lower('%Fidaxomicin%') OR concept_name like
+    lower('%Fosfomycin%') OR concept_name like
+    lower('%Gentamicin%') OR concept_name like
+    lower('%Imipenem%') OR concept_name like
+    lower('%Levofloxacin%') OR concept_name like
+    lower('%Linezolid%') OR concept_name like
+    lower('%Meropenem%') OR concept_name like
+    lower('%Moxifloxacin%') OR concept_name like
+    lower('%Nitrofurantoin%') OR concept_name like
+    lower('%Oxacillin%') OR concept_name like
+    lower('%Penicillin G%') OR concept_name like
+    lower('%Penicillin V%') OR concept_name like
+    lower('%Piperacillin%') OR concept_name like
+    lower('%Piperacillin-Tazobactam%') OR concept_name like
+    lower('%Rifampin%') OR concept_name like
+    lower('%Tigecycline%') OR concept_name like
+    lower('%Tobramycin%') OR concept_name like
+    lower('%Trimethoprim%') OR concept_name like
+    lower('%Vancomycin%')) 
+) 
+
+-- vassopressers
+select d.*
+from drug_exposure d
+where d.person_id IN (
+    SELECT DISTINCT vo.PERSON_ID
+    FROM condition_occurrence co, visit_occurrence vo, concept c 
+    where 
+    co.condition_source_concept_id = c.concept_id
+    and co.visit_occurrence_id = vo.visit_occurrence_id
+    and c.concept_id in (44827180, 44825805)
+)
+and d.drug_concept_id in (
+    select DISTINCT c.concept_id from mimicomop.concept c
+    where  domain_id = 'Drug' and ( 
+    concept_name like
+    lower('%pinephrin%')
+) 
+
+
+concept_name	concept_id	occurrences
+meropenem 500 MG Injection [Merrem]	35606004	12499
+cefepime 1000 MG Injection [Maxipime]	46287356	5548
+300 ML linezolid 2 MG/ML Injection [Zyvox]	46276327	2969
+cefepime 2000 MG Injection	46287349	2584
+meropenem 1000 MG Injection [Merrem]	35606008	1600
+cefepime 1000 MG Injection	46287354	848
+linezolid 600 MG Oral Tablet [Zyvox]	19068758	436
+erythromycin lactobionate 500 MG Injection [Erythrocin]	35603401	136
+cefpodoxime 100 MG Oral Tablet	19074932	118
+tigecycline 50 MG Injection	1742434	105
