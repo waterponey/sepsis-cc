@@ -35,6 +35,12 @@ class MyDataFrame(object):
         self.patient['is_male'] = visit.groupby(gby).gender_source_value.apply(lambda x: (x == 'M').all())
         return self
 
+    def with_race(self, visit):
+        """Categorical values for ethnics"""
+        self.patient['race'] = visit.groupby(gby).race_source_value.astype('category')
+        self.patient['race'] = self.patient['race'].cat.codes
+        return self
+
     def with_n_unique_drugs(self, visit):
         """Number of different drugs given to the patient"""
         self.patient['n_unique_drugs'] = visit.groupby(gby).drug_concept_id.apply(lambda x: (np.unique(x)!=0).sum())
@@ -79,6 +85,17 @@ class MyDataFrame(object):
         self.patient = self.patient.join(out, how='left')
         return self
 
+    def with_plaquete_count(self, meas):
+        """ Platelet count features """
+        subs = meas.loc[meas.measurement_source_value == 'Platelet Count', [gby, 'value_source_value']]
+        gr = subs.groupby(gby)
+        out = gr.apply(lambda x: pd.Series({'plaq_nb_max': x.code.max(),
+                                            'plaq_nb_min': x.code.min(),
+                                            'plaq_nb_first': x.code.iloc[0],
+                                            'plaq_nb_last': x.code.iloc[-1]}))
+        self.patient = self.patient.join(out, how='left')
+        return self
+
+
     def with_features(self):
         pass
-        
