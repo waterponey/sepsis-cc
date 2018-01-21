@@ -85,14 +85,12 @@ class MyDataFrame(object):
         self.patient = self.patient.join(out, how='left')
         return self
 
-    def with_plaquete_count(self, meas):
+    def with_platelet_count(self, meas):
         """ Platelet count features """
         subs = meas.loc[meas.measurement_source_value == 'Platelet Count', [gby, 'value_source_value']]
-        gr = subs.groupby(gby)
-        out = gr.apply(lambda x: pd.Series({'plaq_nb_max': x.code.max(),
-                                            'plaq_nb_min': x.code.min(),
-                                            'plaq_nb_first': x.code.iloc[0],
-                                            'plaq_nb_last': x.code.iloc[-1]}))
+        out = subs.groupby(gby).agg({'value_source_value':[max,min,np.mean, 'first', 'last']})
+        out.columns = ['platq_nb_' + i[1] for i in df_plat_count.columns]
+        out.reset_index(inplace=True)
         self.patient = self.patient.join(out, how='left')
         return self
 
